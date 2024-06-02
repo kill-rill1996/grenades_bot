@@ -9,9 +9,44 @@ router = Router()
 
 @router.message(lambda message: message.text == "1")
 async def req_get(message: types.Message) -> None:
-    api.send_request("grenades/", "GET")
-    # print(requests.get("http://host.docker.internal:4000/v1/healthcheck"))
-    await message.answer("запрос отправлен")
+    grenades = api.send_request("grenades/", "GET")
+    msg = f"{grenades}"
+    await message.answer(msg)
+
+
+@router.message(lambda message: message.text == "2")
+async def req_get(message: types.Message) -> None:
+    body = {
+            "map": "Mirage",
+            "title": "Conn molotov",
+            "description": "left mouse key",
+            "type": "molotov",
+            "side": "T"
+        }
+    created_grenade = api.send_request("grenades/", "POST", body=body)
+    msg = f"{created_grenade}"
+    await message.answer(msg)
+
+
+@router.message(lambda message: message.text == "3")
+async def req_get(message: types.Message) -> None:
+    grenades = api.send_request("grenades/5", "DELETE")
+    msg = f"{grenades}"
+    await message.answer(msg)
+
+
+@router.message(lambda message: message.text == "4")
+async def req_get(message: types.Message) -> None:
+    body = {
+        "map": "Ancient",
+        "title": "Mid grenade",
+        "description": "jumpthrow",
+        "type": "smoke",
+        "side": "CT"
+    }
+    grenades = api.send_request("grenades/4", "PATCH", body=body)
+    msg = f"{grenades}"
+    await message.answer(msg)
 
 
 @router.message()
