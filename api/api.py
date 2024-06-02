@@ -8,7 +8,7 @@ class API:
             "Content-Type": "application/json"
         }
 
-    def _get_request(self, url: str, params) -> dict:
+    def _get_request(self, url: str, params) -> str | dict:
         response = requests.get(self.domen + url, headers=self.headers, params=params)
         if response.status_code != 200:
             return self._handle_error(response)
@@ -32,6 +32,10 @@ class API:
             return self._handle_error(response)
         return response.json()
 
+    def _get_image_request(self, url: str):
+        response = requests.get(url)
+        return response
+
     def send_request(self, url: str, method: str, params: dict = None, body: dict = None) -> dict:
         if method == "GET":
             response = self._get_request(url, params)
@@ -39,6 +43,8 @@ class API:
             response = self._post_request(url, body)
         elif method == "DELETE":
             response = self._delete_request(url)
+        elif method == "GET_IMAGE":
+            response = self._get_image_request(url)
         else:
             response = self._patch_request(url, body)
         return response

@@ -1,6 +1,12 @@
-import requests
+import base64
+import json
+
 from aiogram import types
 from aiogram import Router
+from aiogram.types import InputFile, FSInputFile, BufferedInputFile
+from pydantic import ValidationError
+
+from models.grenade import Grenade, Grenades
 
 from app import api
 
@@ -8,10 +14,21 @@ router = Router()
 
 
 @router.message(lambda message: message.text == "1")
-async def req_get(message: types.Message) -> None:
-    grenades = api.send_request("grenades/", "GET")
-    msg = f"{grenades}"
-    await message.answer(msg)
+async def get_grenades_handle(message: types.Message) -> None:
+    response = api.send_request("grenades/1", "GET")
+
+    if response.get("error") is not None:
+        await message.answer(response["error"])
+
+    try:
+        grenades = Grenades.model_validate(response)
+        msg = ""
+        for grenade in grenades.grenades:
+            msg += f"ID: {grenade.id}, title: {grenade.title}, type: {grenade.type}, side: {grenade.side}, {grenade.images}\n\n"
+        await message.answer(msg)
+
+    except ValidationError:
+        await message.answer("Не получилось получить гранаты")
 
 
 @router.message(lambda message: message.text == "2")
@@ -47,6 +64,14 @@ async def req_get(message: types.Message) -> None:
     grenades = api.send_request("grenades/4", "PATCH", body=body)
     msg = f"{grenades}"
     await message.answer(msg)
+
+
+@router.message(lambda message: message.text == "5")
+async def req_get(message: types.Message) -> None:
+    response = api.send_request("http://localhost:4000/v1/image/1717344283796283.jpg", "GET_IMAGE")
+    image = BufferedInputFile(response.content, filename="image")
+
+    await message.answer_photo(image)
 
 
 @router.message()
