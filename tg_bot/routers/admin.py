@@ -1,12 +1,9 @@
-import base64
-import json
-
 from aiogram import types
 from aiogram import Router
-from aiogram.types import InputFile, FSInputFile, BufferedInputFile
+from aiogram.types import BufferedInputFile
 from pydantic import ValidationError
 
-from models.grenade import Grenade, Grenades
+from models.grenade import Grenades
 
 from app import api
 
@@ -68,12 +65,8 @@ async def req_get(message: types.Message) -> None:
 
 @router.message(lambda message: message.text == "5")
 async def req_get(message: types.Message) -> None:
-    response = api.send_request("http://localhost:4000/v1/image/1717344283796283.jpg", "GET_IMAGE")
-    image = BufferedInputFile(response.content, filename="image")
+    response = api.send_request("image/1717348145561529.jpg", "GET_IMAGE")
+    image = BufferedInputFile(response, filename="image")
 
     await message.answer_photo(image)
 
-
-@router.message()
-async def echo(message: types.Message) -> None:
-    await message.answer(f'{message.text}!')

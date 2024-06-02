@@ -1,5 +1,8 @@
 import requests
 
+import config
+from models.grenade import Grenades, Error
+
 
 class API:
     def __init__(self, domen: str):
@@ -32,11 +35,11 @@ class API:
             return self._handle_error(response)
         return response.json()
 
-    def _get_image_request(self, url: str):
-        response = requests.get(url)
-        return response
+    def _get_image_request(self, url: str) -> bytes:
+        response = requests.get(self.domen + url)
+        return response.content
 
-    def send_request(self, url: str, method: str, params: dict = None, body: dict = None) -> dict:
+    def send_request(self, url: str, method: str, params: dict = None, body: dict = None) -> dict | bytes:
         if method == "GET":
             response = self._get_request(url, params)
         elif method == "POST":
@@ -49,8 +52,14 @@ class API:
             response = self._patch_request(url, body)
         return response
 
-    def get_grenade(self) -> dict:
-        pass
+    def get_grenades(self, params: dict) -> Error | Grenades:
+        """Получение всех гранат по заданным параметрам"""
+        response = self.send_request("grenades", "GET", params)
+
+        if response.get("error") is not None:
+            return Error.model_validate(response)
+
+        return Grenades.model_validate(response)
 
     def _handle_error(self, response: requests.Response) -> dict:
         code = response.status_code

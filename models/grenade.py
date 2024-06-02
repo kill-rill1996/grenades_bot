@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 
 
+class Error(BaseModel):
+    error: str
+
+
 class Image(BaseModel):
     id: int
     name: str
