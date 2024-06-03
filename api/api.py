@@ -37,7 +37,7 @@ class API:
         return response.json()
 
     def _get_image_request(self, url: str) -> bytes:
-        response = requests.get("http://" + url)
+        response = requests.get(url)
         return response.content
 
     def send_request(self, url: str, method: str, params: dict = None, body: dict = None) -> dict | bytes:
@@ -63,11 +63,6 @@ class API:
 
         return Grenades.model_validate(response)
 
-    def get_image(self, url) -> bytes:
-        """Получение картинки по url"""
-        response = self.send_request(url, "GET_IMAGE")
-        return response
-
     def get_grenade(self, grenade_id: str) -> Grenade | Error:
         """Получение гранаты по id"""
         response = self.send_request(f"grenades/{grenade_id}", "GET")
@@ -76,6 +71,11 @@ class API:
             return Error.model_validate(response)
 
         return Grenade.model_validate(response["grenade"])
+
+    def get_image(self, url) -> bytes:
+        """Получение картинки по url"""
+        response = self.send_request(url, "GET_IMAGE")
+        return response
 
     def _handle_error(self, response: requests.Response) -> dict:
         code = response.status_code

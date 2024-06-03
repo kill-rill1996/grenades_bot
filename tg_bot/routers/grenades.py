@@ -93,11 +93,11 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
 
         if len(response.images) == 1:
             await callback.message.delete()
+            print(response.images[0].image_url)
 
             image_response = api.get_image(response.images[0].image_url)
             image = BufferedInputFile(image_response, filename="image")
             await callback.message.answer_photo(image, msg)
-            await callback.message.answer(msg)
         # else:
         #     for image in response.images:
         #         await

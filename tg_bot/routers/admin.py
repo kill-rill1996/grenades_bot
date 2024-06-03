@@ -65,7 +65,7 @@ async def req_get(message: types.Message) -> None:
 
 @router.message(lambda message: message.text == "5")
 async def req_get(message: types.Message) -> None:
-    response = grenades_api.send_request("image/1717348145561529.jpg", "GET_IMAGE")
+    response = grenades_api.get_image("http://localhost:4000/v1/image/1717443392330457.jpg")
     image = BufferedInputFile(response, filename="image")
 
     await message.answer_photo(image)
