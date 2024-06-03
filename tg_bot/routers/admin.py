@@ -5,14 +5,14 @@ from pydantic import ValidationError
 
 from models.grenade import Grenades
 
-from app import api
+from api import grenades_api
 
 router = Router()
 
 
 @router.message(lambda message: message.text == "1")
 async def get_grenades_handle(message: types.Message) -> None:
-    response = api.send_request("grenades/1", "GET")
+    response = grenades_api.send_request("grenades/1", "GET")
 
     if response.get("error") is not None:
         await message.answer(response["error"])
@@ -37,14 +37,14 @@ async def req_get(message: types.Message) -> None:
             "type": "molotov",
             "side": "T"
         }
-    created_grenade = api.send_request("grenades/", "POST", body=body)
+    created_grenade = grenades_api.send_request("grenades/", "POST", body=body)
     msg = f"{created_grenade}"
     await message.answer(msg)
 
 
 @router.message(lambda message: message.text == "3")
 async def req_get(message: types.Message) -> None:
-    grenades = api.send_request("grenades/5", "DELETE")
+    grenades = grenades_api.send_request("grenades/5", "DELETE")
     msg = f"{grenades}"
     await message.answer(msg)
 
@@ -58,14 +58,14 @@ async def req_get(message: types.Message) -> None:
         "type": "smoke",
         "side": "CT"
     }
-    grenades = api.send_request("grenades/4", "PATCH", body=body)
+    grenades = grenades_api.send_request("grenades/4", "PATCH", body=body)
     msg = f"{grenades}"
     await message.answer(msg)
 
 
 @router.message(lambda message: message.text == "5")
 async def req_get(message: types.Message) -> None:
-    response = api.send_request("image/1717348145561529.jpg", "GET_IMAGE")
+    response = grenades_api.send_request("image/1717348145561529.jpg", "GET_IMAGE")
     image = BufferedInputFile(response, filename="image")
 
     await message.answer_photo(image)

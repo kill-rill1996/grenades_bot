@@ -19,8 +19,8 @@ def maps_keyboard() -> InlineKeyboardBuilder:
 def side_keyboard() -> InlineKeyboardBuilder:
     """Выбор стороны"""
     keyboard = InlineKeyboardBuilder()
-    keyboard.row(InlineKeyboardButton(text=f"T", callback_data=f"side_t"))
-    keyboard.row(InlineKeyboardButton(text=f"CT", callback_data=f"side_ct"))
+    keyboard.row(InlineKeyboardButton(text=f"T", callback_data=f"side_T"))
+    keyboard.row(InlineKeyboardButton(text=f"CT", callback_data=f"side_CT"))
     keyboard.adjust(2)
     return keyboard
 
@@ -39,6 +39,7 @@ def grenade_type_keyboard() -> InlineKeyboardBuilder:
 def grenade_titles_keyboard(grenades: list[Grenades]) -> InlineKeyboardBuilder:
     """Вывод title гранат"""
     keyboard = InlineKeyboardBuilder()
+
     for g in grenades:
         keyboard.row(InlineKeyboardButton(
             text=f"{g.title}", callback_data=f"grenadeId_{g.id}")

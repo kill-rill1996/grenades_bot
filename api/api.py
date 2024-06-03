@@ -1,7 +1,8 @@
 import requests
+from aiogram.types import BufferedInputFile
 
 import config
-from models.grenade import Grenades, Error
+from models.grenade import Grenades, Error, Grenade
 
 
 class API:
@@ -36,7 +37,7 @@ class API:
         return response.json()
 
     def _get_image_request(self, url: str) -> bytes:
-        response = requests.get(self.domen + url)
+        response = requests.get("http://" + url)
         return response.content
 
     def send_request(self, url: str, method: str, params: dict = None, body: dict = None) -> dict | bytes:
@@ -54,12 +55,27 @@ class API:
 
     def get_grenades(self, params: dict) -> Error | Grenades:
         """Получение всех гранат по заданным параметрам"""
-        response = self.send_request("grenades", "GET", params)
+        response = self.send_request("grenades/", "GET", params)
+        print(response)
 
         if response.get("error") is not None:
             return Error.model_validate(response)
 
         return Grenades.model_validate(response)
+
+    def get_image(self, url) -> bytes:
+        """Получение картинки по url"""
+        response = self.send_request(url, "GET_IMAGE")
+        return response
+
+    def get_grenade(self, grenade_id: str) -> Grenade | Error:
+        """Получение гранаты по id"""
+        response = self.send_request(f"grenades/{grenade_id}", "GET")
+
+        if response.get("error") is not None:
+            return Error.model_validate(response)
+
+        return Grenade.model_validate(response["grenade"])
 
     def _handle_error(self, response: requests.Response) -> dict:
         code = response.status_code

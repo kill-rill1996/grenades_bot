@@ -5,11 +5,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from loguru import logger
 
 import config as conf
+
 from tg_bot.routers import admin, grenades
-
-from api.api import API
-
-api = API(conf.DOMEN)
 
 
 async def start_bot() -> None:
@@ -19,7 +16,7 @@ async def start_bot() -> None:
     storage = MemoryStorage()
     dispatcher = io.Dispatcher(storage=storage)
 
-    dispatcher.include_routers(grenades.grenades_router)
+    dispatcher.include_routers(admin.router, grenades.router)
 
     await dispatcher.start_polling(bot)
 
