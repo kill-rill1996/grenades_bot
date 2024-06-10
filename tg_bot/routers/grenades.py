@@ -36,17 +36,18 @@ async def sides_handler(callback: types.CallbackQuery, state: FSMContext) -> Non
     map = callback.data.split("_")[1]
     await state.update_data(map=map)
 
-    await callback.message.edit_text("Выберите сторону:", reply_markup=kb.side_keyboard().as_markup())
+    await callback.message.edit_text(f"<b>{map.upper()}</b>", reply_markup=kb.side_keyboard().as_markup())
 
 
 @router.callback_query(FSMGrenades.side)
 async def grenade_type_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
     """Выбор типа гранаты"""
     await state.set_state(FSMGrenades.type)
+    data = await state.get_data()
     side = callback.data.split("_")[1]
     await state.update_data(side=side)
 
-    await callback.message.edit_text("Выберите тип гранаты", reply_markup=kb.grenade_type_keyboard().as_markup())
+    await callback.message.edit_text(f"<b>{data['map'].upper()}</b> | <b>{side}</b>", reply_markup=kb.grenade_type_keyboard().as_markup())
 
 
 @router.callback_query(FSMGrenades.type)
@@ -74,33 +75,35 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
         await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
     else:
-        await callback.message.edit_text("Выберите гранату",
+        await callback.message.edit_text(f"<b>{params['map'].upper()}</b> | <b>{params['side']}</b> | <b>{params['type']}</b>",
                                          reply_markup=kb.grenade_titles_keyboard(response.grenades).as_markup())
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "grenadeId")
 async def grenade_handler(callback: types.CallbackQuery) -> None:
     grenade_id = callback.data.split("_")[1]
-    print(grenade_id)
     response = api.get_grenade(grenade_id)
-    print(response)
 
     if type(response) == models.grenade.Error:
         await callback.message.edit_text(response.error)
 
     else:
-        msg = f"{response.title} {response.description} {response.type}"
+        msg = f"<b>{response.title}</b>\n\n{response.description}"
 
         if len(response.images) == 1:
             await callback.message.delete()
-            print(response.images[0].image_url)
 
             image_response = api.get_image(response.images[0].image_url)
             image = BufferedInputFile(image_response, filename="image")
             await callback.message.answer_photo(image, msg)
-        # else:
-        #     for image in response.images:
-        #         await
+
+        else:
+            for image in response.images:
+                image_response = api.get_image(image.image_url)
+                image = BufferedInputFile(image_response, filename="image")
+                await callback.message.answer_photo(image)
+
+            await callback.message.answer(msg)
 
 
 

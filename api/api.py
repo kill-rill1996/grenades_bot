@@ -56,7 +56,6 @@ class API:
     def get_grenades(self, params: dict) -> Error | Grenades:
         """Получение всех гранат по заданным параметрам"""
         response = self.send_request("grenades/", "GET", params)
-        print(response)
 
         if response.get("error") is not None:
             return Error.model_validate(response)
