@@ -40,7 +40,7 @@ def grenade_type_keyboard() -> InlineKeyboardBuilder:
     return keyboard
 
 
-def grenade_titles_keyboard(grenades: list[Grenades]) -> InlineKeyboardBuilder:
+def grenade_titles_keyboard(grenades: list[Grenades], params: dict) -> InlineKeyboardBuilder:
     """Вывод title гранат"""
     keyboard = InlineKeyboardBuilder()
 
@@ -49,5 +49,5 @@ def grenade_titles_keyboard(grenades: list[Grenades]) -> InlineKeyboardBuilder:
             text=f"{g.title}", callback_data=f"grenadeId_{g.id}")
         )
 
-    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-type"))
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-type_{params['type']}_{params['map']}_{params['side']}"))
     return keyboard
