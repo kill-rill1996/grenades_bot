@@ -22,7 +22,7 @@ async def start_handler(message: types.Message) -> None:
     await message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
 
-@router.message(Command("maps"))
+@router.message(Command("/grenades"))
 async def all_maps_handler(message: types.Message) -> None:
     """Сообщение с выводом карт"""
     await message.edit_text("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())

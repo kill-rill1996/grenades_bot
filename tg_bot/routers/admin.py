@@ -1,72 +1,15 @@
 from aiogram import types
 from aiogram import Router
-from aiogram.types import BufferedInputFile
-from pydantic import ValidationError
+from aiogram.filters import Command
 
-from models.grenade import Grenades
-
-from api import grenades_api
+from tg_bot.middlewares import CheckIsAdminMiddleware
+from config import ADMINS
 
 router = Router()
 
-
-@router.message(lambda message: message.text == "1")
-async def get_grenades_handle(message: types.Message) -> None:
-    response = grenades_api.send_request("grenades/1", "GET")
-
-    if response.get("error") is not None:
-        await message.answer(response["error"])
-
-    try:
-        grenades = Grenades.model_validate(response)
-        msg = ""
-        for grenade in grenades.grenades:
-            msg += f"ID: {grenade.id}, title: {grenade.title}, type: {grenade.type}, side: {grenade.side}, {grenade.images}\n\n"
-        await message.answer(msg)
-
-    except ValidationError:
-        await message.answer("Не получилось получить гранаты")
+router.message.middleware.register(CheckIsAdminMiddleware(ADMINS))
 
 
-@router.message(lambda message: message.text == "2")
-async def req_get(message: types.Message) -> None:
-    body = {
-            "map": "Mirage",
-            "title": "Conn molotov",
-            "description": "left mouse key",
-            "type": "molotov",
-            "side": "T"
-        }
-    created_grenade = grenades_api.send_request("grenades/", "POST", body=body)
-    msg = f"{created_grenade}"
-    await message.answer(msg)
-
-
-@router.message(lambda message: message.text == "3")
-async def req_get(message: types.Message) -> None:
-    grenades = grenades_api.send_request("grenades/5", "DELETE")
-    msg = f"{grenades}"
-    await message.answer(msg)
-
-
-@router.message(lambda message: message.text == "4")
-async def req_get(message: types.Message) -> None:
-    body = {
-        "map": "Ancient",
-        "title": "Mid grenade",
-        "description": "jumpthrow",
-        "type": "smoke",
-        "side": "CT"
-    }
-    grenades = grenades_api.send_request("grenades/4", "PATCH", body=body)
-    msg = f"{grenades}"
-    await message.answer(msg)
-
-
-@router.message(lambda message: message.text == "5")
-async def req_get(message: types.Message) -> None:
-    response = grenades_api.get_image("http://localhost:4000/v1/image/1717443392330457.jpg")
-    image = BufferedInputFile(response, filename="image")
-
-    await message.answer_photo(image)
-
+@router.message(Command("add_grenade"))
+async def add_grenade_handler(message: types.Message) -> None:
+    await message.answer("Added grenade")
