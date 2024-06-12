@@ -22,6 +22,8 @@ def side_keyboard() -> InlineKeyboardBuilder:
     keyboard.row(InlineKeyboardButton(text=f"Terrorists", callback_data=f"side_T"))
     keyboard.row(InlineKeyboardButton(text=f"Counter-terrorists", callback_data=f"side_CT"))
     keyboard.adjust(2)
+
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-maps"))
     return keyboard
 
 
@@ -33,6 +35,8 @@ def grenade_type_keyboard() -> InlineKeyboardBuilder:
     keyboard.row(InlineKeyboardButton(text=f"Flashbang", callback_data=f"type_flash"))
     keyboard.row(InlineKeyboardButton(text=f"Molotov", callback_data=f"type_molotov"))
     keyboard.adjust(2)
+
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-sides"))
     return keyboard
 
 
@@ -44,4 +48,6 @@ def grenade_titles_keyboard(grenades: list[Grenades]) -> InlineKeyboardBuilder:
         keyboard.row(InlineKeyboardButton(
             text=f"{g.title}", callback_data=f"grenadeId_{g.id}")
         )
+
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-type"))
     return keyboard

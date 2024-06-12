@@ -22,32 +22,56 @@ async def start_handler(message: types.Message) -> None:
     await message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
 
-@router.message(Command("maps"))
-async def all_maps_handler(message: types.Message) -> None:
+@router.message(Command("grenades"))
+@router.callback_query(lambda callback: callback.data == "back-to-maps")
+async def all_maps_handler(message: types.Message | types.CallbackQuery, state: FSMContext = None) -> None:
     """Сообщение с выводом карт"""
-    await message.edit_text("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
+    if type(message) == types.CallbackQuery:
+        await state.clear()
+        await message.message.edit_text("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
+    else:
+        await message.edit_text("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
 
-@router.callback_query(lambda callback: callback.data.split("_")[0] == "map")
+@router.callback_query(lambda callback: callback.data.split("_")[0] == "map"
+                       or (callback.data == "back-to-sides" and FSMGrenades.type))
 async def sides_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
     """Выбор стороны после выбора карты"""
-    await state.set_state(FSMGrenades.side)
+    # для кнопки Назад
+    if await state.get_state() == FSMGrenades.type:
+        await state.set_state(FSMGrenades.side)
+        data = await state.get_data()
+        map = data["map"]
+        await callback.message.edit_text(f"<b>{map.upper()}</b>", reply_markup=kb.side_keyboard().as_markup())
 
-    map = callback.data.split("_")[1]
-    await state.update_data(map=map)
+    # для планового выбора
+    else:
+        await state.set_state(FSMGrenades.side)
 
-    await callback.message.edit_text(f"<b>{map.upper()}</b>", reply_markup=kb.side_keyboard().as_markup())
+        map = callback.data.split("_")[1]
+        await state.update_data(map=map)
+
+        await callback.message.edit_text(f"<b>{map.upper()}</b>", reply_markup=kb.side_keyboard().as_markup())
 
 
 @router.callback_query(FSMGrenades.side)
+@router.callback_query(lambda callback: callback.data == "back-to-type")
 async def grenade_type_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
     """Выбор типа гранаты"""
-    await state.set_state(FSMGrenades.type)
-    data = await state.get_data()
-    side = callback.data.split("_")[1]
-    await state.update_data(side=side)
+    # для кнопки Назад
+    if callback.data == "back-to-type":
+        data = await state.get_data()
+        await callback.message.edit_text(f"<b>{data['map'].upper()}</b> | <b>{data['side']}</b>",
+                                         reply_markup=kb.grenade_type_keyboard().as_markup())
 
-    await callback.message.edit_text(f"<b>{data['map'].upper()}</b> | <b>{side}</b>", reply_markup=kb.grenade_type_keyboard().as_markup())
+    # для планового выбора
+    else:
+        await state.set_state(FSMGrenades.type)
+        data = await state.get_data()
+        side = callback.data.split("_")[1]
+        await state.update_data(side=side)
+
+        await callback.message.edit_text(f"<b>{data['map'].upper()}</b> | <b>{side}</b>", reply_markup=kb.grenade_type_keyboard().as_markup())
 
 
 @router.callback_query(FSMGrenades.type)
@@ -63,14 +87,16 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
         "side": fsm_data["side"],
     }
 
-    await state.clear()
+    # await state.clear()
 
     response = api.get_grenades(params)
 
     if type(response) == models.grenade.Error:
+        await state.clear()
         await callback.message.edit_text(response.error)
 
     elif not response.grenades:
+        await state.clear()
         await callback.message.edit_text("По запросу гранат не найдено")
         await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
