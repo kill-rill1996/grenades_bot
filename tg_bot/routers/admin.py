@@ -1,5 +1,6 @@
 from aiogram import types
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
@@ -82,12 +83,28 @@ async def add_description_grenade_handler(message: types.Message, state: FSMCont
     previous_message = data["message"]
     await previous_message.delete()
 
-    msg = f"{data['map']} {data['type']} {data['side']} {data['title']} {data['description']}"
-    await message.answer(msg)
+    await state.set_state(FSMCreateGrenade.images)
+    msg = await message.answer("Отправьте скриншот с ориентирами броска гранаты",
+                               reply_markup=kb.cancel_keyboard().as_markup())
+    await state.update_data(message=msg)
 
-    # await state.set_state(FSMCreateGrenade.image)
-    # await message.edit_text("Отправьте скриншот с ориентирами броска гранаты",
-    #                         reply_markup=kb.cancel_keyboard().as_markup())
+
+@router.message(FSMCreateGrenade.images)
+async def add_images_handler(message: types.Message, state: FSMContext) -> None:
+    """Добавление изображений"""
+    images = message.photo
+    print(len(images))
+    for i in images:
+        print(i)
+
+    data = await state.get_data()
+    previous_message = data["message"]
+    try:
+        await previous_message.delete()
+    except TelegramBadRequest:
+        pass
+
+    await message.answer("Граната создана")
 
 
 # GRENADE DELETE

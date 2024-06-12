@@ -12,4 +12,4 @@ class FSMCreateGrenade(StatesGroup):
     type = State()
     title = State()
     description = State()
-    image = State()
+    images = State()
