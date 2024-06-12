@@ -2,7 +2,7 @@ import requests
 from aiogram.types import BufferedInputFile
 
 import config
-from models.grenade import Grenades, Error, Grenade
+from models.grenade import Grenades, Error, Grenade, StatusOK
 
 
 class API:
@@ -75,6 +75,15 @@ class API:
         """Получение картинки по url"""
         response = self.send_request(url, "GET_IMAGE")
         return response
+
+    def delete_grenade(self, grenade_id: str) -> StatusOK | Error:
+        """Удаление гранаты по id"""
+        response = self.send_request(f"grenades/{grenade_id}", "DELETE")
+
+        if response.get("error") is not None:
+            return Error.model_validate(response)
+
+        return StatusOK.model_validate(response)
 
     def _handle_error(self, response: requests.Response) -> dict:
         code = response.status_code

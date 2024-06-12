@@ -13,6 +13,7 @@ def maps_keyboard() -> InlineKeyboardBuilder:
             text=f"{cs_map.upper()}", callback_data=f"map_{cs_map}")
         )
     keyboard.adjust(2)
+
     return keyboard
 
 

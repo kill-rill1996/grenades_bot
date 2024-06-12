@@ -5,6 +5,10 @@ class Error(BaseModel):
     error: str
 
 
+class StatusOK(BaseModel):
+    message: str
+
+
 class Image(BaseModel):
     id: int
     name: str

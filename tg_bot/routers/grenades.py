@@ -19,7 +19,7 @@ async def start_handler(message: types.Message) -> None:
     await message.answer_sticker(sticker)
     await message.answer(ms.hello_message())
 
-    await message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
+    await message.answer("Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
 
 
 @router.message(Command("grenades"))
