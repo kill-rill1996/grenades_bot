@@ -32,7 +32,6 @@ async def add_map_grenade_handler(callback: types.CallbackQuery, state: FSMConte
 
     await state.set_state(FSMCreateGrenade.side)
     await callback.message.edit_text("Выберите сторону", reply_markup=kb.sides_keyboard_with_cancel().as_markup())
-    # await callback.message.edit_text("Введите название гранаты (например \"Смок на кт\")", reply_markup=kb.cancel_keyboard().as_markup())
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "side", FSMCreateGrenade.side)
@@ -113,9 +112,9 @@ async def add_images_handler(message: types.Message, state: FSMContext) -> None:
 async def maps_for_delete_handler(message: types.Message | types.CallbackQuery) -> None:
     """Вывод списка карт для удаления гранаты"""
     if type(message) == types.Message:
-        await message.answer(f"Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
+        await message.answer(f"Удаление гранат", reply_markup=kb.maps_keyboard().as_markup())
     else:
-        await message.message.edit_text(f"Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
+        await message.message.edit_text(f"Удаление гранат", reply_markup=kb.maps_keyboard().as_markup())
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "delete-map")
@@ -128,7 +127,7 @@ async def grenades_for_delete_handler(callback: types.CallbackQuery) -> None:
     else:
         await callback.message.delete()
         await callback.message.answer(f"На карте {map} гранат нет")
-        await callback.message.answer(f"Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
+        await callback.message.answer(f"Удаление гранат", reply_markup=kb.maps_keyboard().as_markup())
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "delete")
