@@ -160,3 +160,11 @@ async def cancel_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.answer("Действие отменено")
     await callback.message.delete()
+
+
+# UPDATE GRENADE
+@router.message(Command("update_grenade"))
+async def update_grenade_handler(message: types.Message) -> None:
+    """Изменение гранат"""
+    pass
+
