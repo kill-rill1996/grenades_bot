@@ -1,8 +1,9 @@
-from aiogram import types
+from aiogram import types, F
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.types import InputFile
 
 from models.grenade import StatusOK
 from tg_bot.fsm_states import FSMCreateGrenade
@@ -88,13 +89,12 @@ async def add_description_grenade_handler(message: types.Message, state: FSMCont
     await state.update_data(message=msg)
 
 
-@router.message(FSMCreateGrenade.images)
+@router.message(F.photo, FSMCreateGrenade.images)
 async def add_images_handler(message: types.Message, state: FSMContext) -> None:
     """Добавление изображений"""
-    images = message.photo
-    print(len(images))
-    for i in images:
-        print(i)
+    file_id = message.photo[-1].file_id
+    image = await message.bot.download(file=file_id, destination="test.jpg")
+    print(type(image))
 
     data = await state.get_data()
     previous_message = data["message"]
