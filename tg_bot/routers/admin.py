@@ -3,14 +3,15 @@ from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InputFile
+from aiogram.types import BufferedInputFile
 
 from models.grenade import StatusOK
-from tg_bot.fsm_states import FSMCreateGrenade
+from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade
 from tg_bot.middlewares import CheckIsAdminMiddleware
 from config import ADMINS
 from api import grenades_api as api
 from tg_bot.keyboards import admin as kb
+from tg_bot.messages.admin import update_grenade_message, change_field_grenade_message, successful_grenade_changes_message
 
 router = Router()
 
@@ -164,7 +165,128 @@ async def cancel_handler(callback: types.CallbackQuery, state: FSMContext):
 
 # UPDATE GRENADE
 @router.message(Command("update_grenade"))
-async def update_grenade_handler(message: types.Message) -> None:
-    """Изменение гранат"""
-    pass
+async def update_grenade_handler(message: types.Message, state: FSMContext) -> None:
+    """Изменение гранат, первоначальная клавиатура с выбором гранаты"""
+    await state.set_state(FSMUpdateGrenade.grenade)
+
+    all_grenades = api.get_grenades(params={"sort": "map"})
+    await message.answer("Изменение гранат", reply_markup=kb.update_grenade_keyboard(all_grenades).as_markup())
+
+
+@router.callback_query(lambda callback: callback.data.split("_")[0] == "update-grenade", FSMUpdateGrenade.grenade)
+async def choose_update_field_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """Выбор поля для изменения у гранаты"""
+    grenade = api.get_grenade(callback.data.split("_")[1])
+
+    # записываем данные о гранате в state
+    await state.update_data(grenade=grenade)
+    await state.set_state(FSMUpdateGrenade.field)
+
+    msg = update_grenade_message(grenade)
+    await callback.message.edit_text(msg, reply_markup=kb.fields_to_change_keyboard().as_markup())
+
+
+@router.callback_query(lambda callback: callback.data.split("_")[0] == "update-field", FSMUpdateGrenade.field)
+async def get_changes_in_filed_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """Внесение изменений в выбранное поле"""
+    field_to_changed = callback.data.split("_")[1]
+    await state.update_data(field=field_to_changed)
+
+    data = await state.get_data()
+
+    await state.set_state(FSMUpdateGrenade.updating)
+
+    # в случае изменения фотографий
+    if field_to_changed == "images":
+        if len(data["grenade"].images) == 1:
+            await callback.message.delete()
+
+            image_response = api.get_image(data["grenade"].images[0].image_url)
+            image = BufferedInputFile(image_response, filename="image")
+            await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(data["grenade"].images[0].id).as_markup())
+
+        else:
+            await callback.message.delete()
+            for image in data["grenade"].images:
+                image_id = image.id
+                image_response = api.get_image(image.image_url)
+                image = BufferedInputFile(image_response, filename="image")
+                await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(image_id).as_markup())
+
+        await callback.message.answer("Выберите фотографию для удаления", reply_markup=kb.cancel_keyboard().as_markup())
+
+    # в случае изменения всех остальных полей
+    else:
+        # формируем сообщение со старым значением поля
+        msg = change_field_grenade_message(data=data)
+
+        # для приема информации из сообщения
+        if data["field"] in ["title", "description"]:
+            keyboard = kb.fields_to_change_title_description()
+            await callback.message.edit_text(msg, reply_markup=keyboard.as_markup())
+
+        # для выбора с кнопок
+        elif data["field"] in ["type", "side", "map"]:
+            keyboard = kb.fields_to_change_side_type_map(data)
+            await callback.message.edit_text(msg, reply_markup=keyboard.as_markup())
+
+
+@router.message(FSMUpdateGrenade.updating)
+@router.callback_query(FSMUpdateGrenade.updating)
+async def change_grenade_handler(event: types.Message | types.CallbackQuery, state: FSMContext) -> None:
+    """Получение переданных (в сообщении или с кнопок) изменений и внесение их в БД"""
+
+    # получение измененных данных
+    if type(event) == types.Message:
+        changed_data = event.text
+    else:
+        changed_data = event.data
+        # убираем приписку из callback кнопок (map_, type_, side_, ...)
+        changed_data = changed_data.split("_")[1]
+
+    await state.update_data(changed_data=changed_data)
+    data = await state.get_data()
+
+    # удаление фотографии
+    if data["field"] == "images":
+        response = api.delete_image(changed_data)
+
+    # изменение любых других полей
+    else:
+        # формируем данные для отправки
+        data_to_send = {
+            "map": data["grenade"].map,
+            "title": data["grenade"].title,
+            "description": data["grenade"].description,
+            "type": data["grenade"].type,
+            "side": data["grenade"].side,
+            }
+
+        # изменяем необходимое поле
+        data_to_send[data["field"]] = data["changed_data"]
+
+        # отправляем запрос на сервер с новыми данными
+        response = api.update_grenade(data["grenade"].id, data_to_send)
+
+    # проверяем вернул ли запрос ошибку
+    if type(response) == StatusOK:
+        # msg = successful_grenade_changes_message(data_to_send)
+        msg = "<b>Граната успешно изменена</b>"
+    else:
+        msg = "<b>Ошибка при изменении гранаты</b>"
+
+    await state.clear()
+
+    # удаляем предыдущее
+    if type(event) == types.Message:
+        await event.delete()
+    else:
+        await event.message.delete()
+
+    # отправляем ответ
+    if type(event) == types.Message:
+        await event.answer(msg)
+    else:
+        await event.message.answer(msg)
+
 

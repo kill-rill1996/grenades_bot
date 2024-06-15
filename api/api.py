@@ -1,3 +1,4 @@
+import json
 import requests
 from aiogram.types import BufferedInputFile
 
@@ -71,10 +72,19 @@ class API:
 
         return Grenade.model_validate(response["grenade"])
 
-    def get_image(self, url) -> bytes:
+    def get_image(self, url: str) -> bytes:
         """Получение картинки по url"""
         response = self.send_request(url, "GET_IMAGE")
         return response
+
+    def delete_image(self, image_id: str) -> StatusOK | Error:
+        """Удаление фотографии у гранаты"""
+        response = self.send_request(f"images/{image_id}", "DELETE")
+
+        if response.get("error") is not None:
+            return Error.model_validate(response)
+
+        return StatusOK.model_validate(response)
 
     def delete_grenade(self, grenade_id: str) -> StatusOK | Error:
         """Удаление гранаты по id"""
@@ -84,6 +94,15 @@ class API:
             return Error.model_validate(response)
 
         return StatusOK.model_validate(response)
+
+    def update_grenade(self, grenade_id: int, updated_data: dict) -> StatusOK | Error:
+        """Обновление гранаты"""
+        response = self.send_request(url=f"grenades/{grenade_id}", method="PATCH", body=updated_data)
+
+        if response.get("error") is not None:
+            return Error.model_validate(response)
+
+        return StatusOK.model_validate({"message": "grenade successfully modified"})
 
     def _handle_error(self, response: requests.Response) -> dict:
         code = response.status_code

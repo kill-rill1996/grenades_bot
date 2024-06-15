@@ -13,3 +13,10 @@ class FSMCreateGrenade(StatesGroup):
     title = State()
     description = State()
     images = State()
+
+
+class FSMUpdateGrenade(StatesGroup):
+    grenade = State()
+    field = State()
+    updating = State()
+

@@ -17,7 +17,7 @@ async def set_commands(bot: io.Bot):
         BotCommand(command="grenades", description="Гранаты"),
         BotCommand(command="add_grenade", description="Добавить гранату"),
         BotCommand(command="delete_grenade", description="Удалить гранату"),
-        BotCommand(command="update_grenade", description="Изменить гранату"),
+        BotCommand(command="update_grenade", description="Изменение гранат"),
         BotCommand(command="add_images", description="Добавить изображение"),
         BotCommand(command="help", description="Справочная информация"),
     ]
