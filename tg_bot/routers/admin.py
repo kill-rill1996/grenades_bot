@@ -342,9 +342,9 @@ async def change_grenade_handler(event: types.Message | types.CallbackQuery, sta
     # проверяем вернул ли запрос ошибку
     if type(response) == StatusOK:
         # msg = successful_grenade_changes_message(data_to_send)
-        msg = "<b>Граната успешно изменена</b>"
+        msg = "<b>✅ Граната успешно изменена</b>"
     else:
-        msg = "<b>Ошибка при изменении гранаты</b>"
+        msg = "<b>❌ Ошибка при изменении гранаты</b>"
 
     await state.clear()
 
