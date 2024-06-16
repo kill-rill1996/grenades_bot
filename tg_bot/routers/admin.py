@@ -158,10 +158,22 @@ async def delete_grenade_handler(callback: types.CallbackQuery) -> None:
 @router.callback_query(lambda callback: callback.data == 'cancel', StateFilter("*"))
 async def cancel_handler(callback: types.CallbackQuery, state: FSMContext):
     """Отмена всех FSM и удаление последнего сообщения"""
+    # удаление записанных сообщений
+    data = await state.get_data()
+    if data.get("old_messages"):
+        for message in data["old_messages"]:
+            try:
+                await message.delete()
+            except TelegramBadRequest:
+                continue
+
     await state.clear()
     await callback.message.answer("Действие отменено")
-    await callback.message.delete()
+    try:
+        await callback.message.delete()
 
+    except TelegramBadRequest:
+        pass
 
 # UPDATE GRENADE
 @router.message(Command("update_grenade"))
@@ -196,24 +208,33 @@ async def get_changes_in_filed_handler(callback: types.CallbackQuery, state: FSM
 
     await state.set_state(FSMUpdateGrenade.updating)
 
+    old_messages = []
+
     # в случае изменения фотографий
     if field_to_changed == "images":
+        # 1 image
         if len(data["grenade"].images) == 1:
             await callback.message.delete()
 
             image_response = api.get_image(data["grenade"].images[0].image_url)
             image = BufferedInputFile(image_response, filename="image")
-            await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(data["grenade"].images[0].id).as_markup())
+            old_message_photo = await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(data["grenade"].images[0].id).as_markup())
+            old_messages.append(old_message_photo)
 
+        # > 1 images
         else:
             await callback.message.delete()
             for image in data["grenade"].images:
                 image_id = image.id
                 image_response = api.get_image(image.image_url)
                 image = BufferedInputFile(image_response, filename="image")
-                await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(image_id).as_markup())
+                message = await callback.message.answer_photo(image, reply_markup=kb.delete_image_keyboard(image_id).as_markup())
+                old_messages.append(message)
 
-        await callback.message.answer("Выберите фотографию для удаления", reply_markup=kb.cancel_keyboard().as_markup())
+        old_message_cancel = await callback.message.answer("Выберите фотографию для удаления", reply_markup=kb.cancel_keyboard().as_markup())
+        old_messages.append(old_message_cancel)
+        # добавляем в state
+        await state.update_data(old_messages=old_messages)
 
     # в случае изменения всех остальных полей
     else:
@@ -223,7 +244,10 @@ async def get_changes_in_filed_handler(callback: types.CallbackQuery, state: FSM
         # для приема информации из сообщения
         if data["field"] in ["title", "description"]:
             keyboard = kb.fields_to_change_title_description()
-            await callback.message.edit_text(msg, reply_markup=keyboard.as_markup())
+            old_message_desc_title = await callback.message.edit_text(msg, reply_markup=keyboard.as_markup())
+            old_messages.append(old_message_desc_title)
+            # добавляем в state
+            await state.update_data(old_messages=old_messages)
 
         # для выбора с кнопок
         elif data["field"] in ["type", "side", "map"]:
@@ -268,6 +292,14 @@ async def change_grenade_handler(event: types.Message | types.CallbackQuery, sta
         # отправляем запрос на сервер с новыми данными
         response = api.update_grenade(data["grenade"].id, data_to_send)
 
+    # удаляем старые сообщения
+    if data.get("old_messages"):
+        for message in data["old_messages"]:
+            try:
+                await message.delete()
+            except TelegramBadRequest:
+                continue
+
     # проверяем вернул ли запрос ошибку
     if type(response) == StatusOK:
         # msg = successful_grenade_changes_message(data_to_send)
@@ -277,11 +309,9 @@ async def change_grenade_handler(event: types.Message | types.CallbackQuery, sta
 
     await state.clear()
 
-    # удаляем предыдущее
-    if type(event) == types.Message:
-        await event.delete()
-    else:
-        await event.message.delete()
+    # удаляем предыдущее если CallbackQuery
+    # if type(event) == types.CallbackQuery:
+    #     await event.message.delete()
 
     # отправляем ответ
     if type(event) == types.Message:
