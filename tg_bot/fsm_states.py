@@ -20,3 +20,9 @@ class FSMUpdateGrenade(StatesGroup):
     field = State()
     updating = State()
 
+
+class FSMAddImages(StatesGroup):
+    map = State()
+    grenade = State()
+    getImages = State()
+

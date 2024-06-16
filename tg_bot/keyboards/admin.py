@@ -142,3 +142,14 @@ def fields_to_change_title_description() -> InlineKeyboardBuilder:
     keyboard = InlineKeyboardBuilder()
     keyboard.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
     return keyboard
+
+
+def grenades_on_map_keyboard(grenades: Grenades) -> InlineKeyboardBuilder:
+    """Гранаты на определенной карте"""
+    keyboard = InlineKeyboardBuilder()
+    for grenade in grenades.grenades:
+        keyboard.row(InlineKeyboardButton(text=f"{grenade.side.upper()} | {grenade.type.upper()} | {grenade.title}",
+                                          callback_data=f"grenade-id_{grenade.id}"))
+
+    keyboard.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
+    return keyboard

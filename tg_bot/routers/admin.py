@@ -1,8 +1,3 @@
-import datetime
-import io
-import os
-import time
-
 from aiogram import types, F
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
@@ -11,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
 from models.grenade import StatusOK, StatusError, CreateGrenadeModel
-from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade
+from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade, FSMAddImages
 from tg_bot.middlewares import CheckIsAdminMiddleware
 from config import ADMINS
 from api import grenades_api as api
@@ -339,21 +334,76 @@ async def change_grenade_handler(event: types.Message | types.CallbackQuery, sta
 
     # проверяем вернул ли запрос ошибку
     if type(response) == StatusOK:
-        # msg = successful_grenade_changes_message(data_to_send)
-        msg = "<b>✅ Граната успешно изменена</b>"
+        msg = "Граната успешно изменена ✅"
     else:
-        msg = "<b>❌ Ошибка при изменении гранаты</b>"
+        msg = "Ошибка при изменении гранаты ❌"
 
     await state.clear()
-
-    # удаляем предыдущее если CallbackQuery
-    # if type(event) == types.CallbackQuery:
-    #     await event.message.delete()
 
     # отправляем ответ
     if type(event) == types.Message:
         await event.answer(msg)
     else:
         await event.message.answer(msg)
+
+
+# ADD IMAGES
+@router.message(Command("add_images"))
+async def add_images_start_handler(message: types.Message, state: FSMContext):
+    """Добавление фото к существующим гранатам"""
+    await state.set_state(FSMAddImages.map)
+
+    await message.answer("Выберите карту:", reply_markup=kb.maps_keyboard_with_cancel().as_markup())
+
+
+@router.callback_query(FSMAddImages.map)
+async def pick_map_add_images_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Выбор гранаты в выбранной карте"""
+    map = callback.data.split("_")[1]
+    grenades_on_map = api.get_grenades(params={"map": map})
+    await state.set_state(FSMAddImages.grenade)
+
+    await callback.message.edit_text("Выберите гранату:",
+                                     reply_markup=kb.grenades_on_map_keyboard(grenades_on_map).as_markup())
+
+
+@router.callback_query(FSMAddImages.grenade)
+async def pick_grenade_add_images_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Сообщение об ожидании фотографий"""
+    grenade_id = callback.data.split("_")[1]
+    grenade = api.get_grenade(grenade_id)
+    await state.update_data(grenade=grenade)
+    await state.set_state(FSMAddImages.getImages)
+
+    message = await callback.message.edit_text("Отправьте фотографии одним сообщением", reply_markup=kb.cancel_keyboard().as_markup())
+    await state.update_data(old_message=message)
+
+
+@router.message(FSMAddImages.getImages)
+async def get_images_handler(message: types.Message, state: FSMContext):
+    """Прием отправленных фото"""
+    data = await state.get_data()
+
+    file_id = message.photo[-1].file_id
+    image = await message.bot.download(file=file_id)
+
+    response = api.create_image(data["grenade"].id, image)
+
+    if response == StatusError:
+        await message.answer("Ошибка при загрузке фото ❌")
+        await state.clear()
+    else:
+        await message.answer("Изображение добавлено ✅")
+    try:
+        await data["old_message"].delete()
+    except TelegramBadRequest:
+        pass
+
+    await state.clear()
+
+
+
+
+
 
 
