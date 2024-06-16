@@ -92,7 +92,7 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
 
     response = api.get_grenades(params)
 
-    if type(response) == models.grenade.Error:
+    if type(response) == models.grenade.StatusError:
         await callback.message.edit_text(response.error)
 
     elif not response.grenades:
@@ -109,7 +109,7 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
     grenade_id = callback.data.split("_")[1]
     response = api.get_grenade(grenade_id)
 
-    if type(response) == models.grenade.Error:
+    if type(response) == models.grenade.StatusError:
         await callback.message.edit_text(response.error)
 
     else:

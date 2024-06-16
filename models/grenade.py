@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class Error(BaseModel):
+class StatusError(BaseModel):
     error: str
 
 
@@ -16,13 +16,16 @@ class Image(BaseModel):
     image_url: str
 
 
-class Grenade(BaseModel):
-    id: int
+class CreateGrenadeModel(BaseModel):
     map: str
     title: str
     description: str
     type: str
     side: str
+
+
+class Grenade(CreateGrenadeModel):
+    id: int
     version: int
     images: list[Image] = None
 

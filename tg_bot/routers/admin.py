@@ -1,3 +1,7 @@
+import datetime
+import os
+import time
+
 from aiogram import types, F
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
@@ -5,13 +9,13 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
-from models.grenade import StatusOK
+from models.grenade import StatusOK, StatusError, CreateGrenadeModel
 from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade
 from tg_bot.middlewares import CheckIsAdminMiddleware
 from config import ADMINS
 from api import grenades_api as api
 from tg_bot.keyboards import admin as kb
-from tg_bot.messages.admin import update_grenade_message, change_field_grenade_message, successful_grenade_changes_message
+from tg_bot.messages.admin import update_grenade_message, change_field_grenade_message
 
 router = Router()
 
@@ -93,18 +97,53 @@ async def add_description_grenade_handler(message: types.Message, state: FSMCont
 @router.message(F.photo, FSMCreateGrenade.images)
 async def add_images_handler(message: types.Message, state: FSMContext) -> None:
     """Добавление изображений"""
-    file_id = message.photo[-1].file_id
-    image = await message.bot.download(file=file_id, destination="test.jpg")
-    print(type(image))
-
+    # создание гранаты
     data = await state.get_data()
-    previous_message = data["message"]
-    try:
-        await previous_message.delete()
-    except TelegramBadRequest:
-        pass
 
-    await message.answer("Граната создана")
+    grenade = CreateGrenadeModel.model_validate({
+        "map": data["map"],
+        "title": data["title"],
+        "side": data["side"],
+        "type": data["type"],
+        "description": data["description"]
+    })
+    grenade_create_response = api.create_grenade(grenade)
+
+    # ошибка при создании гранаты
+    if type(grenade_create_response) == StatusError:
+        previous_message = data["message"]
+        try:
+            await previous_message.delete()
+        except TelegramBadRequest:
+            pass
+
+        await message.answer("Не удалось создать гранату")
+
+    # если успешно создалась граната
+    else:
+        grenade_id = grenade_create_response.id
+        # создание image к гранате
+        file_id = message.photo[-1].file_id
+
+        filename = str(time.time()).replace(".", "_")
+
+        await message.bot.download(file=file_id, destination=f"tg_bot/static/images/{filename}.jpeg")
+
+        response = api.create_image(grenade_id, filename)
+
+        if type(response) == StatusError:
+            await message.answer(f"Не удалось создать гранату")
+        else:
+            os.remove(f"tg_bot/static/images/{filename}.jpeg")
+            await message.answer("Граната создана")
+
+        previous_message = data["message"]
+        try:
+            await previous_message.delete()
+        except TelegramBadRequest:
+            pass
+
+    await state.clear()
 
 
 # GRENADE DELETE
