@@ -1,4 +1,5 @@
 import datetime
+import io
 import os
 import time
 
@@ -125,16 +126,13 @@ async def add_images_handler(message: types.Message, state: FSMContext) -> None:
         # создание image к гранате
         file_id = message.photo[-1].file_id
 
-        filename = str(time.time()).replace(".", "_")
+        image = await message.bot.download(file=file_id)
 
-        await message.bot.download(file=file_id, destination=f"tg_bot/static/images/{filename}.jpeg")
-
-        response = api.create_image(grenade_id, filename)
+        response = api.create_image(grenade_id, image)
 
         if type(response) == StatusError:
             await message.answer(f"Не удалось создать гранату")
         else:
-            os.remove(f"tg_bot/static/images/{filename}.jpeg")
             await message.answer("Граната создана")
 
         previous_message = data["message"]

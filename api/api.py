@@ -40,9 +40,8 @@ class API:
             return self._handle_error(response)
         return response.json()
 
-    def _post_image_request(self, url: str, filename: str) -> dict:
-        image = open(f"tg_bot/static/images/{filename}.jpeg", "rb")
-        files = {'grenadeImage': image}
+    def _post_image_request(self, url: str, body: BinaryIO) -> dict:
+        files = {'grenadeImage': body.getvalue()}
 
         response = requests.post(self.domen + url, files=files)
 
@@ -54,13 +53,13 @@ class API:
         response = requests.get(url)
         return response.content
 
-    def send_request(self, url: str, method: str, params: dict = None, body: dict | str = None) -> dict | bytes:
+    def send_request(self, url: str, method: str, params: dict = None, body: dict | BinaryIO = None) -> dict | bytes:
         if method == "GET":
             response = self._get_request(url, params)
         elif method == "POST":
             response = self._post_request(url, body)
         elif method == "POST_IMAGE":
-            response = self._post_image_request(url, filename=body)
+            response = self._post_image_request(url, body=body)
         elif method == "DELETE":
             response = self._delete_request(url)
         elif method == "GET_IMAGE":
@@ -135,9 +134,9 @@ class API:
 
         return Grenade.model_validate(response["grenade"])
 
-    def create_image(self, grenade_id: int, filename: str) -> Image | StatusError:
+    def create_image(self, grenade_id: int, image: BinaryIO) -> Image | StatusError:
         """Добавление изображения к гранате"""
-        response = self.send_request(url=f"grenades/{grenade_id}/images", method="POST_IMAGE", body=filename)
+        response = self.send_request(url=f"grenades/{grenade_id}/images", method="POST_IMAGE", body=image)
 
         if response.get("error") is not None:
             return StatusError.model_validate(response)
