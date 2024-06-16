@@ -2,6 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile, BufferedInputFile
+from aiogram.utils.media_group import MediaGroupBuilder
 
 import models.grenade
 from api import grenades_api as api
@@ -123,13 +124,16 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
             await callback.message.answer_photo(image, msg)
 
         else:
+            album_builder = MediaGroupBuilder(caption=msg)
+
             for image in response.images:
                 image_response = api.get_image(image.image_url)
                 image = BufferedInputFile(image_response, filename="image")
-                await callback.message.answer_photo(image)
+                album_builder.add(type="photo", media=image)
 
-            await callback.message.answer(msg)
-
+            await callback.message.answer_media_group(
+                media=album_builder.build()
+            )
 
 
 

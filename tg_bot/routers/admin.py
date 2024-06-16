@@ -8,7 +8,7 @@ from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InputMediaPhoto
 
 from models.grenade import StatusOK, StatusError, CreateGrenadeModel
 from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade
@@ -81,7 +81,7 @@ async def add_title_grenade_handler(message: types.Message, state: FSMContext) -
 
 @router.message(FSMCreateGrenade.description)
 async def add_description_grenade_handler(message: types.Message, state: FSMContext) -> None:
-    """Запись description в fsm data, запрос на отправку картинок"""
+    """Запись description в fsm data, создание гранаты на сервере и запрос на отправку картинок"""
     description = message.text
     await state.update_data(description=description)
 
@@ -89,57 +89,52 @@ async def add_description_grenade_handler(message: types.Message, state: FSMCont
     previous_message = data["message"]
     await previous_message.delete()
 
-    await state.set_state(FSMCreateGrenade.images)
-    msg = await message.answer("Отправьте скриншот с ориентирами броска гранаты",
-                               reply_markup=kb.cancel_keyboard().as_markup())
-    await state.update_data(message=msg)
+    grenade = CreateGrenadeModel.model_validate(
+        {"map": data["map"],
+         "title": data["title"],
+         "side": data["side"],
+         "type": data["type"],
+         "description": data["description"]
+        })
+    grenade_create_response = api.create_grenade(grenade)
+
+    # ошибка при создании гранаты
+    if type(grenade_create_response) == StatusError:
+        await message.answer("Не удалось создать гранату")
+
+    # при успешном создании гранаты
+    else:
+        await state.set_state(FSMCreateGrenade.images)
+        await state.update_data(grenade_id=grenade_create_response.id)
+        msg = await message.answer("Отправьте скриншоты с ориентирами броска гранаты",
+                                   reply_markup=kb.cancel_keyboard().as_markup())
+        await state.update_data(message=msg)
 
 
-@router.message(F.photo, FSMCreateGrenade.images)
+@router.message(FSMCreateGrenade.images)
 async def add_images_handler(message: types.Message, state: FSMContext) -> None:
     """Добавление изображений"""
     # создание гранаты
     data = await state.get_data()
 
-    grenade = CreateGrenadeModel.model_validate({
-        "map": data["map"],
-        "title": data["title"],
-        "side": data["side"],
-        "type": data["type"],
-        "description": data["description"]
-    })
-    grenade_create_response = api.create_grenade(grenade)
+    grenade_id = data["grenade_id"]
+    # создание image к гранате
+    file_id = message.photo[-1].file_id
 
-    # ошибка при создании гранаты
-    if type(grenade_create_response) == StatusError:
-        previous_message = data["message"]
-        try:
-            await previous_message.delete()
-        except TelegramBadRequest:
-            pass
+    image = await message.bot.download(file=file_id)
 
+    response = api.create_image(grenade_id, image)
+
+    if type(response) == StatusError:
         await message.answer("Не удалось создать гранату")
-
-    # если успешно создалась граната
     else:
-        grenade_id = grenade_create_response.id
-        # создание image к гранате
-        file_id = message.photo[-1].file_id
+        await message.answer("Граната создана")
 
-        image = await message.bot.download(file=file_id)
-
-        response = api.create_image(grenade_id, image)
-
-        if type(response) == StatusError:
-            await message.answer(f"Не удалось создать гранату")
-        else:
-            await message.answer("Граната создана")
-
-        previous_message = data["message"]
-        try:
-            await previous_message.delete()
-        except TelegramBadRequest:
-            pass
+    previous_message = data["message"]
+    try:
+        await previous_message.delete()
+    except TelegramBadRequest:
+        pass
 
     await state.clear()
 
