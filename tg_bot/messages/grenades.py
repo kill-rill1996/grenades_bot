@@ -1,10 +1,4 @@
 
-
-def hello_message() -> str:
-    message = "Start message"
-    return message
-
-
 def help_message() -> str:
     message = "Бот позволяет быстро находить необходимые гранаты на картах CS2\n\n"
     message += "Чтобы посмотреть гранаты отправьте боту команду /grenades и выберите необходимые парметры (карту, сторону, тип гранты)\n\n"

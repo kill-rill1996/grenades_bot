@@ -5,9 +5,9 @@ from aiogram.types import FSInputFile, BufferedInputFile
 from aiogram.utils.media_group import MediaGroupBuilder
 
 import models.grenade
+from tg_bot.messages.grenades import help_message
 from api import grenades_api as api
 from tg_bot.keyboards import grenades as kb
-from tg_bot.messages import grenades as ms
 from tg_bot.fsm_states import FSMGrenades
 
 router = Router()
@@ -18,9 +18,8 @@ async def start_handler(message: types.Message) -> None:
     """Стартовое сообщение и сообщение с выбором карт"""
     sticker = FSInputFile("tg_bot/static/stickers/hello.webm")
     await message.answer_sticker(sticker)
-    await message.answer(ms.hello_message())
-
-    await message.answer("Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
+    await message.answer("Для поиска гранат используйте команду \n/grenades\n\n"
+                         "Для получения подробной информации о всех доступных командах бота введите \n/help")
 
 
 @router.message(Command("help"))
@@ -28,8 +27,7 @@ async def help_handler(message: types.Message) -> None:
     """Информационное сообщение"""
     sticker = FSInputFile("tg_bot/static/stickers/help.webm")
     await message.answer_sticker(sticker)
-    await message.answer(ms.help_message())
-
+    await message.answer(help_message())
 
 
 @router.message(Command("grenades"))
@@ -125,7 +123,9 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
         await callback.message.edit_text(response.error)
 
     else:
-        msg = f"<b>{response.title}</b>\n\n{response.description}"
+        msg = f"<b>{response.map.upper()}</b> | <b>{response.side.upper()}</b> | <b>{response.type.upper()}</b>" \
+              f"\n\n<b>{response.title}</b>" \
+              f"\n\n{response.description}"
 
         if len(response.images) == 1:
             await callback.message.delete()
