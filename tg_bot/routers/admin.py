@@ -3,7 +3,7 @@ from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, InputMediaPhoto
+from aiogram.types import BufferedInputFile
 
 from models.grenade import StatusOK, StatusError, CreateGrenadeModel
 from tg_bot.fsm_states import FSMCreateGrenade, FSMUpdateGrenade, FSMAddImages
@@ -54,7 +54,7 @@ async def add_type_grenade_handler(callback: types.CallbackQuery, state: FSMCont
     await state.update_data(message=callback.message)
 
     await state.set_state(FSMCreateGrenade.title)
-    await callback.message.edit_text("Введите название гранаты (например \"Смок на кт\")",
+    await callback.message.edit_text("Введите название гранаты (например \"Смок в окно\")",
                                      reply_markup=kb.cancel_keyboard().as_markup())
 
 
@@ -70,7 +70,9 @@ async def add_title_grenade_handler(message: types.Message, state: FSMContext) -
     await previous_message.delete()
 
     await state.set_state(FSMCreateGrenade.description)
-    msg = await message.answer("Введите полное описание как бросать гранату", reply_markup=kb.cancel_keyboard().as_markup())
+    msg = await message.answer("Введите подробное описание как бросать гранату, "
+                               "ориентируясь на изображения, которые будут приложены на следующем шаге",
+                               reply_markup=kb.cancel_keyboard().as_markup())
     await state.update_data(message=msg)
 
 
@@ -95,13 +97,13 @@ async def add_description_grenade_handler(message: types.Message, state: FSMCont
 
     # ошибка при создании гранаты
     if type(grenade_create_response) == StatusError:
-        await message.answer("Не удалось создать гранату")
+        await message.answer("Не удалось создать гранату ❌")
 
     # при успешном создании гранаты
     else:
         await state.set_state(FSMCreateGrenade.images)
         await state.update_data(grenade_id=grenade_create_response.id)
-        msg = await message.answer("Отправьте скриншоты с ориентирами броска гранаты",
+        msg = await message.answer("Отправьте изображения с ориентирами для броска гранаты",
                                    reply_markup=kb.cancel_keyboard().as_markup())
         await state.update_data(message=msg)
 
@@ -122,9 +124,9 @@ async def add_images_handler(message: types.Message, state: FSMContext) -> None:
         response = api.create_image(grenade_id, image)
 
         if type(response) == StatusError:
-            await message.answer("Не удалось создать гранату")
+            await message.answer("Не удалось добавить гранату ❌")
         else:
-            await message.answer("Граната создана")
+            await message.answer("Граната добавлена ✅")
 
         previous_message = data["message"]
         try:
@@ -135,7 +137,7 @@ async def add_images_handler(message: types.Message, state: FSMContext) -> None:
         await state.clear()
 
     except TypeError:
-        msg = await message.answer("Необходимо отправить изображение", reply_markup=kb.cancel_keyboard().as_markup())
+        msg = await message.answer("Необходимо отправить изображение ❌", reply_markup=kb.cancel_keyboard().as_markup())
         previous_message = data["message"]
         try:
             await previous_message.delete()
@@ -164,7 +166,7 @@ async def grenades_for_delete_handler(callback: types.CallbackQuery) -> None:
         await callback.message.edit_text("Выберите гранату", reply_markup=kb.grenades_keyboard(response).as_markup())
     else:
         await callback.message.delete()
-        await callback.message.answer(f"На карте {map} гранат нет")
+        await callback.message.answer(f"На карте {map} гранат нет ❌")
         await callback.message.answer(f"Удаление гранат", reply_markup=kb.maps_keyboard().as_markup())
 
 
@@ -211,6 +213,7 @@ async def cancel_handler(callback: types.CallbackQuery, state: FSMContext):
 
     except TelegramBadRequest:
         pass
+
 
 # UPDATE GRENADE
 @router.message(Command("update_grenade"))
