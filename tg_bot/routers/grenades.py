@@ -131,6 +131,7 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
                 image = BufferedInputFile(image_response, filename="image")
                 album_builder.add(type="photo", media=image)
 
+            await callback.message.delete()
             await callback.message.answer_media_group(
                 media=album_builder.build()
             )

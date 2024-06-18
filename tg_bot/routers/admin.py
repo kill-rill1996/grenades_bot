@@ -111,27 +111,37 @@ async def add_images_handler(message: types.Message, state: FSMContext) -> None:
     """Добавление изображений"""
     # создание гранаты
     data = await state.get_data()
-
     grenade_id = data["grenade_id"]
+
     # создание image к гранате
-    file_id = message.photo[-1].file_id
-
-    image = await message.bot.download(file=file_id)
-
-    response = api.create_image(grenade_id, image)
-
-    if type(response) == StatusError:
-        await message.answer("Не удалось создать гранату")
-    else:
-        await message.answer("Граната создана")
-
-    previous_message = data["message"]
     try:
-        await previous_message.delete()
-    except TelegramBadRequest:
-        pass
+        file_id = message.photo[-1].file_id
 
-    await state.clear()
+        image = await message.bot.download(file=file_id)
+
+        response = api.create_image(grenade_id, image)
+
+        if type(response) == StatusError:
+            await message.answer("Не удалось создать гранату")
+        else:
+            await message.answer("Граната создана")
+
+        previous_message = data["message"]
+        try:
+            await previous_message.delete()
+        except TelegramBadRequest:
+            pass
+
+        await state.clear()
+
+    except TypeError:
+        msg = await message.answer("Необходимо отправить изображение", reply_markup=kb.cancel_keyboard().as_markup())
+        previous_message = data["message"]
+        try:
+            await previous_message.delete()
+            await state.update_data(message=msg)
+        except TelegramBadRequest:
+            pass
 
 
 # GRENADE DELETE
