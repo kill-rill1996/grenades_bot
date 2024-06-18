@@ -379,22 +379,33 @@ async def get_images_handler(message: types.Message, state: FSMContext):
     """Прием отправленных фото"""
     data = await state.get_data()
 
-    file_id = message.photo[-1].file_id
-    image = await message.bot.download(file=file_id)
+    if message.photo:
+        file_id = message.photo[-1].file_id
+        image = await message.bot.download(file=file_id)
 
-    response = api.create_image(data["grenade"].id, image)
+        response = api.create_image(data["grenade"].id, image)
 
-    if response == StatusError:
-        await message.answer("Ошибка при загрузке фото ❌")
+        if response == StatusError:
+            await message.answer("Ошибка при загрузке фото ❌")
+            await state.clear()
+        else:
+            await message.answer("Изображение добавлено ✅")
+        try:
+            await data["old_message"].delete()
+        except TelegramBadRequest:
+            pass
+
         await state.clear()
     else:
-        await message.answer("Изображение добавлено ✅")
-    try:
-        await data["old_message"].delete()
-    except TelegramBadRequest:
-        pass
+        try:
+            await data["old_message"].delete()
+        except TelegramBadRequest:
+            pass
 
-    await state.clear()
+        message = await message.answer("Необходимо отправить изображение, попробуйте еще раз", reply_markup=kb.cancel_keyboard().as_markup())
+        await state.update_data(old_message=message)
+
+
 
 
 
