@@ -23,6 +23,15 @@ async def start_handler(message: types.Message) -> None:
     await message.answer("Выберите карту", reply_markup=kb.maps_keyboard().as_markup())
 
 
+@router.message(Command("help"))
+async def help_handler(message: types.Message) -> None:
+    """Информационное сообщение"""
+    sticker = FSInputFile("tg_bot/static/stickers/help.webm")
+    await message.answer_sticker(sticker)
+    await message.answer(ms.help_message())
+
+
+
 @router.message(Command("grenades"))
 @router.callback_query(lambda callback: callback.data == "back-to-maps")
 async def all_maps_handler(message: types.Message | types.CallbackQuery, state: FSMContext) -> None:
@@ -97,7 +106,9 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
         await callback.message.edit_text(response.error)
 
     elif not response.grenades:
-        await callback.message.edit_text("По запросу гранат не найдено")
+        sticker = FSInputFile("tg_bot/static/stickers/not_found.webm")
+        await callback.message.answer_sticker(sticker)
+        await callback.message.edit_text("Гранат по запросу не найдено")
         await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
     else:
@@ -135,6 +146,9 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
             await callback.message.answer_media_group(
                 media=album_builder.build()
             )
+
+
+
 
 
 
