@@ -116,6 +116,7 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "grenadeId")
 async def grenade_handler(callback: types.CallbackQuery) -> None:
+    """Полный вывод одной гранаты и связанных изображений"""
     grenade_id = callback.data.split("_")[1]
     response = api.get_grenade(grenade_id)
 
