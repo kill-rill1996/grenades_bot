@@ -88,6 +88,9 @@ class API:
 
     def get_image(self, url: str) -> bytes:
         """Получение картинки по url"""
+        if config.VERSION == "PROD":
+            url = url.replace("localhost", "host.docker.internal")
+
         response = self.send_request(url, "GET_IMAGE")
         return response
 
