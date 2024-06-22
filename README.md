@@ -2,7 +2,7 @@
 
 ### start app
 ```
-$ docker build -t tg_bot . && docker run --name grenades_bot tg_bot
+$ docker build -t tg_bot . && docker run -d --name grenades_bot tg_bot
 ```
 
 ### stop app and delete container
