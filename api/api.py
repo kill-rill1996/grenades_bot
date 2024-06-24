@@ -88,8 +88,7 @@ class API:
 
     def get_image(self, url: str) -> bytes:
         """Получение картинки по url"""
-        if config.VERSION == "PROD":
-            url = url.replace("localhost", config.DOMEN)
+        url = url.replace("http://localhost:4000/v1/", config.DOMEN)
 
         response = self.send_request(url, "GET_IMAGE")
         return response
