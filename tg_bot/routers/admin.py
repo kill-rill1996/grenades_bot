@@ -183,9 +183,9 @@ async def delete_grenade_handler(callback: types.CallbackQuery) -> None:
     grenade_id = callback.data.split("_")[1]
     response = api.delete_grenade(grenade_id)
     if type(response) == StatusOK:
-        await callback.message.edit_text("Граната удалена")
+        await callback.message.edit_text("Граната удалена ✅")
     else:
-        await callback.message.edit_text("Произошла ошибка при удалении гранаты")
+        await callback.message.edit_text("Произошла ошибка при удалении гранаты ❌")
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "delete-confirmation-no")

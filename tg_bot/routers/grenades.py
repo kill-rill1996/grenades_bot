@@ -84,19 +84,30 @@ async def grenade_type_handler(callback: types.CallbackQuery, state: FSMContext)
 
 
 @router.callback_query(lambda callback: callback.data.split("_")[0] == "type", FSMGrenades.type)
+@router.callback_query(lambda callback: callback.data.split("_")[0] == "back-to-grenades")
 async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
     """Вывод отсортированных гранат"""
-    grenade_type = callback.data.split("_")[1]
-    await state.update_data(type=grenade_type)
+    # для кнопки назад
+    if callback.data.split("_")[0] == "back-to-grenades":
+        params = {
+            "map": callback.data.split("_")[1],
+            "side": callback.data.split("_")[2],
+            "type": callback.data.split("_")[3]
+        }
 
-    fsm_data = await state.get_data()
-    params = {
-        "type": fsm_data["type"],
-        "map": fsm_data["map"],
-        "side": fsm_data["side"],
-    }
+    else:
+        # для планового выбора
+        grenade_type = callback.data.split("_")[1]
+        await state.update_data(type=grenade_type)
 
-    await state.clear()
+        fsm_data = await state.get_data()
+        params = {
+            "type": fsm_data["type"],
+            "map": fsm_data["map"],
+            "side": fsm_data["side"],
+        }
+
+        await state.clear()
 
     response = api.get_grenades(params)
 
@@ -110,7 +121,14 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
         await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
     else:
-        await callback.message.edit_text(f"<b>{params['map'].upper()}</b> | <b>{params['side'].upper()}</b> | <b>{params['type'].upper()}</b>",
+        # в случае когда пришли с кнопки назад
+        if callback.data.split("_")[0] == "back-to-grenades":
+            await callback.message.delete()
+            await callback.message.answer(f"<b>{params['map'].upper()}</b> | <b>{params['side'].upper()}</b> | <b>{params['type'].upper()}</b>",
+                                         reply_markup=kb.grenade_titles_keyboard(response.grenades, params).as_markup())
+        # в случае планового выбора
+        else:
+            await callback.message.edit_text(f"<b>{params['map'].upper()}</b> | <b>{params['side'].upper()}</b> | <b>{params['type'].upper()}</b>",
                                          reply_markup=kb.grenade_titles_keyboard(response.grenades, params).as_markup())
 
 
@@ -133,10 +151,10 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
 
             image_response = api.get_image(response.images[0].image_url)
             image = BufferedInputFile(image_response, filename="image")
-            await callback.message.answer_photo(image, msg)
+            await callback.message.answer_photo(image, msg, reply_markup=kb.back_to_grenades_title_keyboard(response).as_markup())
 
         else:
-            album_builder = MediaGroupBuilder(caption=msg)
+            album_builder = MediaGroupBuilder()
 
             for image in response.images:
                 image_response = api.get_image(image.image_url)
@@ -147,6 +165,7 @@ async def grenade_handler(callback: types.CallbackQuery) -> None:
             await callback.message.answer_media_group(
                 media=album_builder.build()
             )
+            await callback.message.answer(msg, reply_markup=kb.back_to_grenades_title_keyboard(response).as_markup())
 
 
 

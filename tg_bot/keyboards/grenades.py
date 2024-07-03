@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from config import MAPS
-from models.grenade import Grenades
+from models.grenade import Grenades, Grenade
 
 
 def maps_keyboard() -> InlineKeyboardBuilder:
@@ -52,3 +52,12 @@ def grenade_titles_keyboard(grenades: list[Grenades], params: dict) -> InlineKey
 
     keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-type_{params['type']}_{params['map']}_{params['side']}"))
     return keyboard
+
+
+def back_to_grenades_title_keyboard(grenade: Grenade) -> InlineKeyboardBuilder:
+    """Кнопка для возвращения назад из выведенной гранаты"""
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-grenades_{grenade.map}_{grenade.side}_{grenade.type}"))
+    return keyboard
+
