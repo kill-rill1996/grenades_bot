@@ -54,7 +54,7 @@ async def add_type_grenade_handler(callback: types.CallbackQuery, state: FSMCont
     await state.update_data(message=callback.message)
 
     await state.set_state(FSMCreateGrenade.title)
-    await callback.message.edit_text("Введите название гранаты (например \"Смок в окно\")",
+    await callback.message.edit_text("Введите <b>название</b> гранаты (например \"Смок в окно\")",
                                      reply_markup=kb.cancel_keyboard().as_markup())
 
 
@@ -62,50 +62,66 @@ async def add_type_grenade_handler(callback: types.CallbackQuery, state: FSMCont
 async def add_title_grenade_handler(message: types.Message, state: FSMContext) -> None:
     """Запись title в fsm data, запрос на введение description"""
     title = message.text
-    await state.update_data(title=title)
 
     data = await state.get_data()
 
     previous_message = data["message"]
     await previous_message.delete()
 
-    await state.set_state(FSMCreateGrenade.description)
-    msg = await message.answer("Введите подробное описание как бросать гранату, "
-                               "ориентируясь на изображения, которые будут приложены на следующем шаге",
-                               reply_markup=kb.cancel_keyboard().as_markup())
-    await state.update_data(message=msg)
+    # если был отправлен не текст
+    if title is None:
+        msg = await message.answer("Название гранаты необходимо ввести <b>текстом</b> ❌",
+                                   reply_markup=kb.cancel_keyboard().as_markup())
+        await state.update_data(message=msg)
+
+    else:
+        await state.update_data(title=title)
+        await state.set_state(FSMCreateGrenade.description)
+
+        msg = await message.answer("Введите подробное <b>описание</b> как бросать гранату, "
+                                   "ориентируясь на изображения, которые будут приложены на следующем шаге",
+                                   reply_markup=kb.cancel_keyboard().as_markup())
+        await state.update_data(message=msg)
 
 
 @router.message(FSMCreateGrenade.description)
 async def add_description_grenade_handler(message: types.Message, state: FSMContext) -> None:
     """Запись description в fsm data, создание гранаты на сервере и запрос на отправку картинок"""
     description = message.text
-    await state.update_data(description=description)
 
     data = await state.get_data()
     previous_message = data["message"]
     await previous_message.delete()
 
-    grenade = CreateGrenadeModel.model_validate(
-        {"map": data["map"],
-         "title": data["title"],
-         "side": data["side"],
-         "type": data["type"],
-         "description": data["description"]
-        })
-    grenade_create_response = api.create_grenade(grenade)
-
-    # ошибка при создании гранаты
-    if type(grenade_create_response) == StatusError:
-        await message.answer("Не удалось создать гранату ❌")
-
-    # при успешном создании гранаты
-    else:
-        await state.set_state(FSMCreateGrenade.images)
-        await state.update_data(grenade_id=grenade_create_response.id)
-        msg = await message.answer("Отправьте изображения с ориентирами для броска гранаты",
+    # если отправили не текст
+    if description is None:
+        msg = await message.answer("Полное описание гранаты необходимо ввести <b>текстом</b> ❌",
                                    reply_markup=kb.cancel_keyboard().as_markup())
         await state.update_data(message=msg)
+
+    else:
+        await state.update_data(description=description)
+
+        grenade = CreateGrenadeModel.model_validate(
+            {"map": data["map"],
+             "title": data["title"],
+             "side": data["side"],
+             "type": data["type"],
+             "description": description
+            })
+        grenade_create_response = api.create_grenade(grenade)
+
+        # ошибка при создании гранаты
+        if type(grenade_create_response) == StatusError:
+            await message.answer("Не удалось создать гранату ❌")
+
+        # при успешном создании гранаты
+        else:
+            await state.set_state(FSMCreateGrenade.images)
+            await state.update_data(grenade_id=grenade_create_response.id)
+            msg = await message.answer("Отправьте <b>изображения</b> с ориентирами для броска гранаты",
+                                       reply_markup=kb.cancel_keyboard().as_markup())
+            await state.update_data(message=msg)
 
 
 @router.message(FSMCreateGrenade.images)
