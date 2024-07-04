@@ -385,10 +385,17 @@ async def pick_map_add_images_handler(callback: types.CallbackQuery, state: FSMC
     """Выбор гранаты в выбранной карте"""
     map = callback.data.split("_")[1]
     grenades_on_map = api.get_grenades(params={"map": map})
-    await state.set_state(FSMAddImages.grenade)
 
-    await callback.message.edit_text("Выберите гранату:",
-                                     reply_markup=kb.grenades_on_map_keyboard(grenades_on_map).as_markup())
+    if not grenades_on_map.grenades:
+        await callback.message.delete()
+        await callback.message.answer(f"На карте {map} гранат нет ❌")
+
+        await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard_with_cancel().as_markup())
+
+    else:
+        await state.set_state(FSMAddImages.grenade)
+        await callback.message.edit_text("Выберите гранату:",
+                                        reply_markup=kb.grenades_on_map_keyboard(grenades_on_map).as_markup())
 
 
 @router.callback_query(FSMAddImages.grenade)
