@@ -117,7 +117,7 @@ async def grenades_title_handler(callback: types.CallbackQuery, state: FSMContex
     elif not response.grenades:
         sticker = FSInputFile("tg_bot/static/stickers/not_found.webm")
         await callback.message.answer_sticker(sticker)
-        await callback.message.edit_text("Гранат по запросу не найдено")
+        await callback.message.edit_text("Гранаты не найдены ❌")
         await callback.message.answer("Выберите карту:", reply_markup=kb.maps_keyboard().as_markup())
 
     else:
