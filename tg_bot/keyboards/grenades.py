@@ -20,8 +20,8 @@ def maps_keyboard() -> InlineKeyboardBuilder:
 def side_keyboard() -> InlineKeyboardBuilder:
     """Выбор стороны"""
     keyboard = InlineKeyboardBuilder()
-    keyboard.row(InlineKeyboardButton(text=f"Terrorists", callback_data=f"side_T"))
     keyboard.row(InlineKeyboardButton(text=f"Counter-terrorists", callback_data=f"side_CT"))
+    keyboard.row(InlineKeyboardButton(text=f"Terrorists", callback_data=f"side_T"))
     keyboard.adjust(2)
 
     keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data=f"back-to-maps"))

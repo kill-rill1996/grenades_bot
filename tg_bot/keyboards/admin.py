@@ -121,8 +121,8 @@ def fields_to_change_side_type_map(data: dict) -> InlineKeyboardBuilder:
         keyboard.row(InlineKeyboardButton(text=f"Molotov", callback_data=f"type_molotov"))
 
     elif data["field"] == "side":
-        keyboard.row(InlineKeyboardButton(text=f"Terrorists", callback_data=f"side_T"))
         keyboard.row(InlineKeyboardButton(text=f"Counter-terrorists", callback_data=f"side_CT"))
+        keyboard.row(InlineKeyboardButton(text=f"Terrorists", callback_data=f"side_T"))
 
     keyboard.adjust(2)
     keyboard.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
